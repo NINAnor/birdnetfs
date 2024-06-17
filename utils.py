@@ -3,24 +3,18 @@ import shutil
 import fsspec
 import librosa
 import audioread
-from audioread import Audio
 
 def read_file(filepath, sr):
     with fsspec.open(filepath) as f:
-        wave, fs = librosa.load(f)
+        wave, fs = librosa.load(f,sr=sr, mono=True, res_type="kaiser_fast")
     return wave, fs
 
-def read_audio_data(path, sample_rate):
-    print("read_audio_data")
-    # Open file with librosa (uses ffmpeg or libav)
+def read_audio_data(path, sr):
     try:
-        ndarray, rate = librosa.load(
-            path, sr=sample_rate, mono=True, res_type="kaiser_fast"
-        )
-        duration = librosa.get_duration(y=ndarray, sr=sample_rate)
+        ndarray, rate = read_file(path, sr)
+        duration = librosa.get_duration(y=ndarray, sr=sr)
     except audioread.exceptions.NoBackendError as e:
         print(e)
-
     return ndarray, rate, duration
 
 def clean_tmp(directory="/tmp"):

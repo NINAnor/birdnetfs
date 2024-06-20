@@ -6,7 +6,7 @@ export LC_ALL=C
 export PYTHONPATH="${PYTHONPATH}:./birdnetsrc"
 
 # Files to process
-FILE_LIST="file_to_analyze.csv"
+FILE_LIST="files_to_analyze.csv"
 
 # Using GNU Parallel to process each file
-parallel --progress --eta --resume --joblog status.txt python analyse_file.py :::: $FILE_LIST
+parallel --progress --eta --resume --joblog status.txt python analyse.py :::: $FILE_LIST

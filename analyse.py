@@ -4,11 +4,13 @@ import sys
 import numpy as np
 import os
 
-import config as cfg
 import birdnetsrc.model
-from birdnetsrc.analyze import predict, get_result_file_name, saveResultFile, getSortedTimestamps
+import birdnetsrc.species
+
+import config as cfg
+from birdnetsrc.analyze import get_result_file_name, saveResultFile, getSortedTimestamps, loadCodes, predict
 from birdnetsrc.audio import splitSignal
-from birdnetsrc.utils import writeErrorLog
+from birdnetsrc.utils import writeErrorLog, readLines
 
 from utils import read_audio_data
 
@@ -195,14 +197,14 @@ def analyzeFile(fpath: str):
     result_file_name = get_result_file_name(fpath)
 
     # Open file and split into chunks:
-    wave, sr, fileDuration = read_audio_data(fpath, sr=cfg.SAMPLE_RATE)
+    wave, sr, fileLengthSeconds = read_audio_data(fpath, sr=cfg.SAMPLE_RATE)
 
     # Status
     print(f"Analyzing {fpath}", flush=True)
 
     # Process each chunk
     try:
-        while offset < fileDuration:
+        while offset < fileLengthSeconds:
             chunks = splitSignal(wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN)
             samples = []
             timestamps = []
@@ -271,6 +273,21 @@ def analyzeFile(fpath: str):
     return True
 
 if __name__ == "__main__":
+
+    # Set paths relative to script path (requested in #3)
+    script_dir = os.sep.join([os.path.dirname(os.path.abspath(sys.argv[0])), "birdnetsrc"])
+    cfg.MODEL_PATH = os.path.join(script_dir, cfg.MODEL_PATH)
+    cfg.LABELS_FILE = os.path.join(script_dir, cfg.LABELS_FILE)
+    cfg.TRANSLATED_LABELS_PATH = os.path.join(script_dir, cfg.TRANSLATED_LABELS_PATH)
+    cfg.MDATA_MODEL_PATH = os.path.join(script_dir, cfg.MDATA_MODEL_PATH)
+    cfg.CODES_FILE = os.path.join(script_dir, cfg.CODES_FILE)
+    cfg.ERROR_LOG_FILE = os.path.join(".", cfg.ERROR_LOG_FILE)
+
+    # Load eBird codes, labels
+    cfg.CODES = loadCodes()
+    cfg.LABELS = readLines(cfg.LABELS_FILE)
+    
+    cfg.TRANSLATED_LABELS = cfg.LABELS
 
     filename = sys.argv[1]
     analyzeFile(filename)

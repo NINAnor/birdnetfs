@@ -7,13 +7,12 @@ import yaml
 import fs
 import sys
 import logging
-import time
+from tenacity import wait_exponential, retry
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from yaml import FullLoader
 
 import config as cfg
 from utils import remove_extension, openCachedFile, openAudioFile, saveSignal
-
 
 def setup_logging():
     logging.basicConfig(
@@ -23,23 +22,22 @@ def setup_logging():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
+@retry(wait=wait_exponential(multiplier=1, min=4, max=120))
+def wait_fc():
+    print("Retrying ...")
+    raise Exception("FAIL TO CONNECT")
 
-def do_connection(connection_string, retries=3, delay=5):
+@retry(wait=wait_exponential(multiplier=1, min=4, max=120))
+def do_connection(connection_string):
     """Establish a connection to the filesystem with retries."""
-    for attempt in range(retries):
-        try:
-            if connection_string:
-                return fs.open_fs(connection_string)
-            return False
-        except Exception as e:
-            logging.error(f"Attempt {attempt + 1} failed to connect to filesystem: {e}")
-            if attempt < retries - 1:
-                logging.info(f"Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                logging.error("Failed to connect to filesystem after multiple attempts.")
-                sys.exit(1)
-
+    try:
+        if connection_string:
+            return fs.open_fs(connection_string)
+        return False
+    except Exception as e:
+        logging.error(f"Attempt failed to connect to filesystem: {e}")
+        logging.info("Retrying connection...")
+        raise
 
 def walk_audio(filesystem, input_path):
     """Walk through the filesystem and yield audio files."""
@@ -47,7 +45,6 @@ def walk_audio(filesystem, input_path):
     for path, dirs, flist in walker:
         for f in flist:
             yield fs.path.combine(path, f.name)
-
 
 def parse_folders(filesystem, apath, rpath):
     """Parse audio and result folders, matching audio files with their corresponding result files."""
@@ -60,7 +57,6 @@ def parse_folders(filesystem, apath, rpath):
     logging.info(f'Found {len(matched_files)} audio files with valid result file.')
     return matched_files
 
-
 def get_audio_files(filesystem, apath):
     """Get all audio files from the specified path."""
     if not filesystem:
@@ -68,7 +64,6 @@ def get_audio_files(filesystem, apath):
         return [f for f in audio_files if f.endswith((".WAV", ".wav", ".mp3"))]
     else:
         return [audiofile for audiofile in walk_audio(filesystem, apath)]
-
 
 def match_audio_and_results(audio_files, audio_no_extension, result_files):
     """Match audio files with their corresponding result files."""
@@ -79,7 +74,6 @@ def match_audio_and_results(audio_files, audio_no_extension, result_files):
             audio_idx = audio_no_extension.index(result_no_extension)
             matched_files.append({'audio': audio_files[audio_idx], 'result': result})
     return matched_files
-
 
 def parse_files(file_list, max_segments=10, threshold=0.6):
     """Parse the file list and make a list of segments."""
@@ -94,7 +88,6 @@ def parse_files(file_list, max_segments=10, threshold=0.6):
 
     return [(audio, segments[audio]) for audio in segments]
 
-
 def group_segments_by_species(file_list, threshold):
     """Group segments by species."""
     species_segments = {}
@@ -104,7 +97,6 @@ def group_segments_by_species(file_list, threshold):
             species_segments.setdefault(segment['species'], []).append(segment)
     return species_segments
 
-
 def organize_segments_by_audio_file(species_segments):
     """Organize segments by audio file."""
     segments = {}
@@ -112,7 +104,6 @@ def organize_segments_by_audio_file(species_segments):
         for segment in species_segments[species]:
             segments.setdefault(segment['audio'], []).append(segment)
     return segments
-
 
 def find_segments(audio_file, result_file, confidence_threshold):
     """Find segments in the result file that meet the confidence threshold."""
@@ -133,26 +124,19 @@ def find_segments(audio_file, result_file, confidence_threshold):
 
     return segments
 
-
-def extract_segments(item, sample_rate, out_path, filesystem, seg_length=3, retries=3, delay=5):
+@retry(wait=wait_exponential(multiplier=5, min=60, max=600))
+def extract_segments(item, sample_rate, out_path, filesystem, seg_length=3):
     """Extract segments from the audio file and save them with retries."""
     audio_file, segments = item
-    logging.info(f'Extracting segments from {audio_file}')
 
-    for attempt in range(retries):
-        try:
-            signal, rate = (openAudioFile(audio_file, sample_rate) if not filesystem else openCachedFile(filesystem, audio_file, sample_rate))
-            save_extracted_segments(signal, rate, segments, out_path, seg_length)
-            break  # Break the loop if successful
-        except Exception as e:
-            logging.error(f"Attempt {attempt + 1} failed to extract segments from {audio_file}: {e}")
-            if attempt < retries - 1:
-                logging.info(f"Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                logging.error(f"Failed to extract segments from {audio_file} after multiple attempts.")
-                logging.error(traceback.format_exc())
-
+    try:
+        signal, rate = (openAudioFile(audio_file, sample_rate) if not filesystem else openCachedFile(filesystem, audio_file, sample_rate))
+        save_extracted_segments(signal, rate, segments, out_path, seg_length)
+        logging.info(f'Segments extracted from {audio_file}')
+    except Exception as e:
+        logging.error(f"Failed to extract segments from {audio_file}: {e}")
+        logging.error(traceback.format_exc())
+        raise
 
 def save_extracted_segments(signal, rate, segments, out_path, seg_length):
     """Save the extracted segments to the output path."""
@@ -171,7 +155,6 @@ def save_extracted_segments(signal, rate, segments, out_path, seg_length):
             logging.error(f"Error saving segment {segment}: {e}")
             logging.error(traceback.format_exc())
 
-
 def save_segment(segment_signal, segment, out_path):
     """Save an individual segment."""
     species_path = os.path.join(out_path, segment['species'])
@@ -180,7 +163,6 @@ def save_segment(segment_signal, segment, out_path):
     segment_name = f"start={segment['start']}_end={segment['end']}_conf={segment['confidence']:.3f}_file={os.path.basename(segment['audio']).rsplit('.', 1)[0]}.wav"
     segment_path = os.path.join(species_path, segment_name)
     saveSignal(segment_signal, segment_path)
-
 
 if __name__ == '__main__':
     setup_logging()
@@ -193,7 +175,7 @@ if __name__ == '__main__':
         config = yaml.load(config_file, Loader=FullLoader)
 
     num_cpus = os.cpu_count()
-    max_workers = min(num_cpus, 4)  # Limit the number of concurrent workers
+    max_workers = min(num_cpus, 50)  # Limit the number of concurrent workers
     logging.info(f"Number of CPUs available: {num_cpus}")
     logging.info(f"Max workers set to: {max_workers}")
 

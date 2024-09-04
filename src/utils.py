@@ -1,14 +1,17 @@
+import glob
 import os
 import shutil
+
+import audioread
 import fsspec
 import librosa
-import audioread
-import glob
+
 
 def read_file(filepath, sr):
     with fsspec.open(filepath) as f:
-        wave, fs = librosa.load(f,sr=sr, mono=True, res_type="kaiser_fast")
+        wave, fs = librosa.load(f, sr=sr, mono=True, res_type="kaiser_fast")
     return wave, fs
+
 
 def read_audio_data(path, sr):
     try:
@@ -17,6 +20,7 @@ def read_audio_data(path, sr):
     except audioread.exceptions.NoBackendError as e:
         print(e)
     return ndarray, rate, duration
+
 
 def clean_tmp(directory="/tmp"):
     # Target only directories starting with 'tmp'
@@ -28,12 +32,12 @@ def clean_tmp(directory="/tmp"):
                     shutil.rmtree(folder_path)
                     print(f"Deleted folder: {folder_path}")
             except Exception as e:
-                print(f'Failed to delete {folder_path}. Reason: {e}')
+                print(f"Failed to delete {folder_path}. Reason: {e}")
+
 
 def openCachedFile(filesystem, path, sample_rate=48000, offset=0.0, duration=None):
-    
-    import tempfile
     import shutil
+    import tempfile
 
     bin = filesystem.openbin(path)
 
@@ -43,23 +47,33 @@ def openCachedFile(filesystem, path, sample_rate=48000, offset=0.0, duration=Non
 
     return sig, rate
 
-def openAudioFile(path, sample_rate=44100, offset=0.0, duration=None):    
 
+def openAudioFile(path, sample_rate=44100, offset=0.0, duration=None):
     try:
-        sig, rate = librosa.load(path, sr=sample_rate, offset=offset, duration=duration, mono=True, res_type='kaiser_fast')
+        sig, rate = librosa.load(
+            path,
+            sr=sample_rate,
+            offset=offset,
+            duration=duration,
+            mono=True,
+            res_type="kaiser_fast",
+        )
     except:
         sig, rate = [], sample_rate
 
     return sig, rate
 
-def saveSignal(sig, fname):
 
+def saveSignal(sig, fname):
     import soundfile as sf
-    sf.write(fname, sig, 48000, 'PCM_16')
+
+    sf.write(fname, sig, 48000, "PCM_16")
+
 
 #####################################################################
 ######################### PARSING UTILS #############################
 #####################################################################
+
 
 def remove_extension(input):
     filename = input.split("/")[-1].split(".")[0]
@@ -69,16 +83,19 @@ def remove_extension(input):
         filename = input.split("/")[-1].split(".")[0]
     return filename
 
-def parseFolders(apath, rpath):
 
-    audio_files = [f for f in glob.glob(apath + "/**/*", recursive = True) if os.path.isfile(f)]
+def parseFolders(apath, rpath):
+    audio_files = [
+        f for f in glob.glob(apath + "/**/*", recursive=True) if os.path.isfile(f)
+    ]
     audio_no_extension = []
     for audio_file in audio_files:
         audio_file_no_extension = remove_extension(audio_file)
         audio_no_extension.append(audio_file_no_extension)
 
-
-    result_files = [f for f in glob.glob(rpath + "/**/*", recursive = True) if os.path.isfile(f)]
+    result_files = [
+        f for f in glob.glob(rpath + "/**/*", recursive=True) if os.path.isfile(f)
+    ]
 
     flist = []
     for result in result_files:
@@ -87,11 +104,11 @@ def parseFolders(apath, rpath):
 
         if is_in:
             audio_idx = audio_no_extension.index(result_no_extension)
-            pair = {'audio': audio_files[audio_idx], 'result': result}
+            pair = {"audio": audio_files[audio_idx], "result": result}
             flist.append(pair)
         else:
             continue
 
-    print('Found {} audio files with valid result file.'.format(len(flist)))
+    print(f"Found {len(flist)} audio files with valid result file.")
 
     return flist

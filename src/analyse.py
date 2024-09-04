@@ -1,20 +1,22 @@
 import datetime
 import operator
-import sys
-import numpy as np
 import os
-
-import birdnetsrc.model
-import birdnetsrc.species
+import sys
 
 import config as cfg
-from birdnetsrc.analyze import get_result_file_name, saveResultFile, getSortedTimestamps, loadCodes, predict
+from birdnetsrc.analyze import (
+    get_result_file_name,
+    getSortedTimestamps,
+    loadCodes,
+    predict,
+    saveResultFile,
+)
 from birdnetsrc.audio import splitSignal
-from birdnetsrc.utils import writeErrorLog, readLines
-
+from birdnetsrc.utils import readLines, writeErrorLog
 from utils import read_audio_data
 
 RTABLE_HEADER = "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
+
 
 def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: int):
     """Saves the results to the hard drive.
@@ -54,7 +56,9 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
             start, end = timestamp.split("-", 1)
 
             for c in r[timestamp]:
-                if c[1] > cfg.MIN_CONFIDENCE and (not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST):
+                if c[1] > cfg.MIN_CONFIDENCE and (
+                    not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST
+                ):
                     selection_id += 1
                     label = cfg.TRANSLATED_LABELS[cfg.LABELS.index(c[0])]
                     code = cfg.CODES[c[0]] if c[0] in cfg.CODES else c[0]
@@ -75,7 +79,9 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
             rstring = ""
 
             for c in r[timestamp]:
-                if c[1] > cfg.MIN_CONFIDENCE and (not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST):
+                if c[1] > cfg.MIN_CONFIDENCE and (
+                    not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST
+                ):
                     label = cfg.TRANSLATED_LABELS[cfg.LABELS.index(c[0])]
                     ts = timestamp.replace("-", "\t")
                     lbl = label.replace("_", ", ")
@@ -94,7 +100,9 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
             start, end = timestamp.split("-", 1)
 
             for c in r[timestamp]:
-                if c[1] > cfg.MIN_CONFIDENCE and (not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST):
+                if c[1] > cfg.MIN_CONFIDENCE and (
+                    not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST
+                ):
                     label = cfg.TRANSLATED_LABELS[cfg.LABELS.index(c[0])]
                     rstring += "\n{},{},{},{},{},{:.4f},{:.4f},{:.4f},{},{},{},{},{},{}".format(
                         afile_path,
@@ -129,22 +137,26 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
             start, end = timestamp.split("-", 1)
 
             for c in r[timestamp]:
-                if c[1] > cfg.MIN_CONFIDENCE and (not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST):
+                if c[1] > cfg.MIN_CONFIDENCE and (
+                    not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST
+                ):
                     label = cfg.TRANSLATED_LABELS[cfg.LABELS.index(c[0])]
-                    rstring += "\n{},{},{},{},{},{},{},{:.4f},{:.4f},{:.4f},{},{},{}".format(
-                        parent_folder.rstrip("/"),
-                        folder_name,
-                        filename,
-                        start,
-                        float(end) - float(start),
-                        label.split("_", 1)[0],
-                        label.split("_", 1)[-1],
-                        c[1],
-                        cfg.LATITUDE,
-                        cfg.LONGITUDE,
-                        cfg.WEEK,
-                        cfg.SIG_OVERLAP,
-                        (1.0 - cfg.SIGMOID_SENSITIVITY) + 1.0,
+                    rstring += (
+                        "\n{},{},{},{},{},{},{},{:.4f},{:.4f},{:.4f},{},{},{}".format(
+                            parent_folder.rstrip("/"),
+                            folder_name,
+                            filename,
+                            start,
+                            float(end) - float(start),
+                            label.split("_", 1)[0],
+                            label.split("_", 1)[-1],
+                            c[1],
+                            cfg.LATITUDE,
+                            cfg.LONGITUDE,
+                            cfg.WEEK,
+                            cfg.SIG_OVERLAP,
+                            (1.0 - cfg.SIGMOID_SENSITIVITY) + 1.0,
+                        )
                     )
 
             # Write result string to file
@@ -163,10 +175,16 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
             for c in r[timestamp]:
                 start, end = timestamp.split("-", 1)
 
-                if c[1] > cfg.MIN_CONFIDENCE and (not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST):
+                if c[1] > cfg.MIN_CONFIDENCE and (
+                    not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST
+                ):
                     label = cfg.TRANSLATED_LABELS[cfg.LABELS.index(c[0])]
                     rstring += "{},{},{},{},{:.4f}\n".format(
-                        start, end, label.split("_", 1)[0], label.split("_", 1)[-1], c[1]
+                        start,
+                        end,
+                        label.split("_", 1)[0],
+                        label.split("_", 1)[-1],
+                        c[1],
                     )
 
             # Write result string to file
@@ -175,6 +193,7 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
     # Save as file
     with open(path, "w", encoding="utf-8") as rfile:
         rfile.write(out_string)
+
 
 def analyzeFile(fpath: str):
     """Analyzes a file.
@@ -205,7 +224,9 @@ def analyzeFile(fpath: str):
     # Process each chunk
     try:
         while offset < fileLengthSeconds:
-            chunks = splitSignal(wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN)
+            chunks = splitSignal(
+                wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN
+            )
             samples = []
             timestamps = []
 
@@ -234,10 +255,12 @@ def analyzeFile(fpath: str):
                     pred = p[i]
 
                     # Assign scores to labels
-                    p_labels = zip(cfg.LABELS, pred)
+                    p_labels = zip(cfg.LABELS, pred, strict=False)
 
                     # Sort by score
-                    p_sorted = sorted(p_labels, key=operator.itemgetter(1), reverse=True)
+                    p_sorted = sorted(
+                        p_labels, key=operator.itemgetter(1), reverse=True
+                    )
 
                     # Store top 5 results and advance indices
                     results[str(s_start) + "-" + str(s_end)] = p_sorted
@@ -272,10 +295,12 @@ def analyzeFile(fpath: str):
 
     return True
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     # Set paths relative to script path (requested in #3)
-    script_dir = os.sep.join([os.path.dirname(os.path.abspath(sys.argv[0])), "birdnetsrc"])
+    script_dir = os.sep.join(
+        [os.path.dirname(os.path.abspath(sys.argv[0])), "birdnetsrc"]
+    )
     cfg.MODEL_PATH = os.path.join(script_dir, cfg.MODEL_PATH)
     cfg.LABELS_FILE = os.path.join(script_dir, cfg.LABELS_FILE)
     cfg.TRANSLATED_LABELS_PATH = os.path.join(script_dir, cfg.TRANSLATED_LABELS_PATH)
@@ -286,11 +311,10 @@ if __name__ == "__main__":
     # Load eBird codes, labels
     cfg.CODES = loadCodes()
     cfg.LABELS = readLines(cfg.LABELS_FILE)
-    
+
     cfg.TRANSLATED_LABELS = cfg.LABELS
 
     cfg.SPECIES_LIST_FILE = os.path.join(".", "species_list.txt")
-
 
     filename = sys.argv[1]
     analyzeFile(filename)

@@ -1,0 +1,3 @@
+[submodule "BirdNET-Analyzer"]
+	path = src/birdnetsrc
+	url = https://github.com/NINAnor/birdnetsrc.git

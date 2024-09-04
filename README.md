@@ -26,13 +26,13 @@ mv BirdNET-Analyzer birdnetsrc
 
 3- Analyze
 
-There is two options. 
+There is two options.
 
 - First you can analyze a file of your chosing using:
 
 ```bash
 export PYTHONPATH="${PYTHONPATH}:./birdnetsrc"
-python analyse.py filecache::ssh://USER:PASSWORD@HOST:/PATH/TO/AUDIO/FILE1.mp3
+python analyse.py filecache::ssh://$USER:$PASSWORD@HOST:/PATH/TO/AUDIO/FILE1.mp3
 ```
 
 - Or analyze multiple files in parallel (using [GNU parallel](https://www.gnu.org/software/parallel/)):

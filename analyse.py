@@ -289,5 +289,8 @@ if __name__ == "__main__":
     
     cfg.TRANSLATED_LABELS = cfg.LABELS
 
+    cfg.SPECIES_LIST_FILE = os.path.join(".", "species_list.txt")
+
+
     filename = sys.argv[1]
     analyzeFile(filename)

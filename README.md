@@ -31,6 +31,7 @@ There is two options.
 - First you can analyze a file of your chosing using:
 
 ```bash
+export PYTHONPATH="${PYTHONPATH}:./birdnetsrc"
 python analyse.py filecache::ssh://USER:PASSWORD@HOST:/PATH/TO/AUDIO/FILE1.mp3
 ```
 

@@ -1,0 +1,7 @@
+CONNECTION_STRING: "ssh://USER:PASSWORD@HOST" # Your credentials
+INPUT_PATH: "PATH/TO/DATA" # Path to where the data has been 
+OUTPUT_PATH_BIRDNET: "PATH/TO/RESULTS" # Path to BirdNET result files
+NUM_SEGMENTS: 10 # Number of 3s segment to extract per species
+THRESHOLD: 0.9 # Threshold for a detection to be considered valid
+SAMPLE_RATE: 48000 # Should not be changed as we resample the sampling rate
+OUT_PATH_SEGMENTS: "PATH/TO/SEGMENTS" # Path where to store the segments

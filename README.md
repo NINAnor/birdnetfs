@@ -45,3 +45,27 @@ Then run:
 sudo apt-get install parallel
 time systemd-run --scope --user --property=CPUWeight=1 -- sh -c './analyse.sh'
 ```
+
+Analyzing the files will return `Birdnet.selection.table.txt` files in the `OUTPUT_PATH_BIRDNET`.
+
+## Extract the detections
+
+1- Update the `config_connection.yaml`
+
+2- Build a `.parquet` database using:
+
+```bash
+python3 src/parse_results.py
+```
+
+:star: Note that the database will contain `$NUM_SEGMENT` at `$THRESHOLD`. Both parameters saved in `config_connection.yaml`. 
+
+3- Extract the detections!
+
+```bash
+python3 src/extract.py
+```
+
+
+
+

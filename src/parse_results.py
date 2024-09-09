@@ -9,6 +9,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import yaml
 from tenacity import retry, wait_exponential
+
 from utils import remove_extension
 
 
@@ -40,18 +41,22 @@ def walk_audio(filesystem, input_path):
         input_path,
         filter=["*.wav", "*.flac", "*.mp3", "*.ogg", "*.m4a", "*.WAV", "*.MP3"],
     )
-    for path, dirs, flist in walker:
+    for path, _dirs, flist in walker:
         for f in flist:
             yield fs.path.combine(path, f.name)
 
 
 def parse_folders(filesystem, apath, rpath):
-    """Parse audio and result folders, matching audio files with their corresponding result files."""
+    """
+    Parse audio and result folders, matching audio files with their corresponding result files.
+    """  # noqa: E501
     audio_files = get_audio_files(filesystem, apath)
     audio_no_extension = [remove_extension(audio_file) for audio_file in audio_files]
 
     result_files = [
-        f for f in glob.glob(rpath + "/**/*", recursive=True) if os.path.isfile(f)
+        f
+        for f in glob.glob(rpath + "/**/*", recursive=True)
+        if os.path.isfile(f)  # noqa: PTH113, PTH207
     ]
     matched_files = match_audio_and_results(
         audio_files, audio_no_extension, result_files
@@ -65,7 +70,9 @@ def get_audio_files(filesystem, apath):
     """Get all audio files from the specified path."""
     if not filesystem:
         audio_files = [
-            f for f in glob.glob(apath + "/**/*", recursive=True) if os.path.isfile(f)
+            f
+            for f in glob.glob(apath + "/**/*", recursive=True)
+            if os.path.isfile(f)  # noqa: PTH113, PTH207
         ]
         return [f for f in audio_files if f.endswith((".WAV", ".wav", ".mp3"))]
     else:
@@ -93,7 +100,7 @@ def parse_files(file_list, max_segments=10, threshold=0.6):
 
     segments = organize_segments_by_audio_file(species_segments)
     logging.info(
-        f"Found {sum(len(v) for v in segments.values())} segments in {len(segments)} audio files."
+        f"Found {sum(len(v) for v in segments.values())} segments in {len(segments)} audio files."  # noqa: E501
     )
 
     return [(audio, segments[audio]) for audio in segments]
@@ -122,7 +129,7 @@ def find_segments(audio_file, result_file, confidence_threshold):
     """Find segments in the result file that meet the confidence threshold."""
     segments = []
     try:
-        with open(result_file) as rf:
+        with open(result_file) as rf:  # noqa: PTH123
             lines = [line.strip() for line in rf.readlines()]
 
         for i, line in enumerate(lines):
@@ -163,11 +170,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open(args.config) as config_file:
-        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    with open(args.config) as config_file:  # noqa: PTH123
+        config = yaml.load(config_file, Loader=yaml.FullLoader)  # noqa: S506
 
     myfs = do_connection(config["CONNECTION_STRING"])
-    parsed_folders = parse_folders(myfs, config["INPUT_PATH"], config["OUTPUT_PATH"])
+    parsed_folders = parse_folders(myfs, config["INPUT_PATH"], config["OUTPUT_PATH_BIRDNET"])
     parsed_files = parse_files(
         parsed_folders, config["NUM_SEGMENTS"], config["THRESHOLD"]
     )

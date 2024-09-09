@@ -1,6 +1,7 @@
 import datetime
 import operator
 import os
+import pathlib
 import sys
 
 import config as cfg
@@ -18,7 +19,9 @@ from utils import read_audio_data
 RTABLE_HEADER = "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 
 
-def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: int):
+def saveResultFile(
+    r: dict[str, list], path: pathlib.Path, afile_path: pathlib.Path, sample_rate: int
+):
     """Saves the results to the hard drive.
 
     Args:
@@ -28,15 +31,15 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
     """
     # Make folder if it doesn't exist
     print(f"PATH IS {path}")
-    if os.path.dirname(path):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+    if path.parent:
+        path.parent.mkdir(parents=True, exist_ok=True)
 
     # Selection table
     out_string = ""
 
     if cfg.RESULT_TYPE == "table":
         selection_id = 0
-        filename = os.path.basename(afile_path)
+        filename = afile_path.parent
 
         # Write header
         out_string += RTABLE_HEADER
@@ -118,7 +121,7 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
                         (1.0 - cfg.SIGMOID_SENSITIVITY) + 1.0,
                         cfg.MIN_CONFIDENCE,
                         cfg.SPECIES_LIST_FILE,
-                        os.path.basename(cfg.MODEL_PATH),
+                        cfg.MODEL_PATH,
                     )
 
             # Write result string to file
@@ -191,11 +194,11 @@ def saveResultFile(r: dict[str, list], path: str, afile_path: str, sample_rate: 
             out_string += rstring
 
     # Save as file
-    with open(path, "w", encoding="utf-8") as rfile:
+    with path.open("w", encoding="utf-8") as rfile:
         rfile.write(out_string)
 
 
-def analyzeFile(fpath: str):
+def analyzeFile(fpath: pathlib.Path):
     """Analyzes a file.
 
     Predicts the scores for the file and saves the results.
@@ -298,15 +301,13 @@ def analyzeFile(fpath: str):
 
 if __name__ == "__main__":
     # Set paths relative to script path (requested in #3)
-    script_dir = os.sep.join(
-        [os.path.dirname(os.path.abspath(sys.argv[0])), "birdnetsrc"]
-    )
-    cfg.MODEL_PATH = os.path.join(script_dir, cfg.MODEL_PATH)
-    cfg.LABELS_FILE = os.path.join(script_dir, cfg.LABELS_FILE)
-    cfg.TRANSLATED_LABELS_PATH = os.path.join(script_dir, cfg.TRANSLATED_LABELS_PATH)
-    cfg.MDATA_MODEL_PATH = os.path.join(script_dir, cfg.MDATA_MODEL_PATH)
-    cfg.CODES_FILE = os.path.join(script_dir, cfg.CODES_FILE)
-    cfg.ERROR_LOG_FILE = os.path.join(".", cfg.ERROR_LOG_FILE)
+    script_dir = pathlib.Path(sys.argv[0]).parent.absolute / "birdnetsrc"
+    cfg.MODEL_PATH = script_dir / cfg.MODEL_PATH
+    cfg.LABELS_FILE = script_dir / cfg.LABELS_FILE
+    cfg.TRANSLATED_LABELS_PATH = script_dir / cfg.TRANSLATED_LABELS_PATH
+    cfg.MDATA_MODEL_PATH = script_dir / cfg.MDATA_MODEL_PATH
+    cfg.CODES_FILE = script_dir / cfg.CODES_FILE
+    cfg.ERROR_LOG_FILE = pathlib.Path() / cfg.ERROR_LOG_FILE
 
     # Load eBird codes, labels
     cfg.CODES = loadCodes()
@@ -314,7 +315,7 @@ if __name__ == "__main__":
 
     cfg.TRANSLATED_LABELS = cfg.LABELS
 
-    cfg.SPECIES_LIST_FILE = os.path.join(".", "species_list.txt")
+    cfg.SPECIES_LIST_FILE = pathlib.Path() / "species_list.txt"
 
-    filename = sys.argv[1]
+    filename = pathlib.Path(sys.argv[1])
     analyzeFile(filename)

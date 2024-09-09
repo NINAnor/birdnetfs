@@ -181,3 +181,6 @@ test_*
 joblog
 *.log
 config_connection.yaml
+.vscode/
+.copier-answer.yaml
+.*

@@ -13,13 +13,13 @@ RANDOM_SEED: int = 42
 ##########################
 
 MODEL_VERSION: str = "V2.4"
-PB_MODEL: str = "/home/benjamin.cretois/Code/birdnetfs/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model"
+PB_MODEL: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model"
 # MODEL_PATH = PB_MODEL # This will load the protobuf model
-MODEL_PATH: str = "/home/benjamin.cretois/Code/birdnetfs/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model_FP32.tflite"
-MDATA_MODEL_PATH: str = "/home/benjamin.cretois/Code/birdnetfs/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_MData_Model_V2_FP16.tflite"
-LABELS_FILE: str = "/home/benjamin.cretois/Code/birdnetfs/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt"
+MODEL_PATH: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model_FP32.tflite"
+MDATA_MODEL_PATH: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_MData_Model_V2_FP16.tflite"
+LABELS_FILE: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt"
 TRANSLATED_LABELS_PATH: str = (
-    "/home/benjamin.cretois/Code/birdnetfs/birdnetfs/birdnetsrc/labels/V2.4"
+    "/home/benjamin.cretois/Code/birdnetfs/birdnetfs/src/birdnetsrc/labels/V2.4"
 )
 
 # Path to custom trained classifier
@@ -71,10 +71,10 @@ LOCATION_FILTER_THRESHOLD: float = 0.03
 # Note: Entries in this list have to match entries from the LABELS_FILE
 # We use the 2021 eBird taxonomy for species names (Clements list)
 CODES_FILE: str = (
-    "/home/benjamin.cretois/Code/birdnetfs/birdnetsrc/eBird_taxonomy_codes_2021E.json"
+    "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/eBird_taxonomy_codes_2021E.json"
 )
 SPECIES_LIST_FILE: str = (
-    "/home/benjamin.cretois/Code/birdnetfs/birdnetsrc/example/species_list.txt"
+    "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/example/species_list.txt"
 )
 
 # File input path and output path for selection tables
@@ -125,7 +125,7 @@ USE_NOISE: bool = False
 # Specifies the output format. 'table' denotes a Raven selection table,
 # 'audacity' denotes a TXT file with the same format as Audacity timeline labels
 # 'csv' denotes a generic CSV file with start, end, species and confidence.
-RESULT_TYPE: str = "table"
+RESULT_TYPES: str = "table"
 OUTPUT_FILENAME: str = (
     "BirdNET_SelectionTable.txt"  # this is for combined Raven selection tables only
 )
@@ -253,7 +253,7 @@ def getConfig():
         "SIGMOID_SENSITIVITY": SIGMOID_SENSITIVITY,
         "MIN_CONFIDENCE": MIN_CONFIDENCE,
         "BATCH_SIZE": BATCH_SIZE,
-        "RESULT_TYPE": RESULT_TYPE,
+        "RESULT_TYPES": RESULT_TYPES,
         "OUTPUT_FILENAME": OUTPUT_FILENAME,
         "TRAIN_DATA_PATH": TRAIN_DATA_PATH,
         "SAMPLE_CROP_MODE": SAMPLE_CROP_MODE,
@@ -316,7 +316,7 @@ def setConfig(c):
     global SIGMOID_SENSITIVITY
     global MIN_CONFIDENCE
     global BATCH_SIZE
-    global RESULT_TYPE
+    global RESULT_TYPES
     global OUTPUT_FILENAME
     global TRAIN_DATA_PATH
     global SAMPLE_CROP_MODE
@@ -376,7 +376,7 @@ def setConfig(c):
     SIGMOID_SENSITIVITY = c["SIGMOID_SENSITIVITY"]
     MIN_CONFIDENCE = c["MIN_CONFIDENCE"]
     BATCH_SIZE = c["BATCH_SIZE"]
-    RESULT_TYPE = c["RESULT_TYPE"]
+    RESULT_TYPES = c["RESULT_TYPES"]
     OUTPUT_FILENAME = c["OUTPUT_FILENAME"]
     TRAIN_DATA_PATH = c["TRAIN_DATA_PATH"]
     SAMPLE_CROP_MODE = c["SAMPLE_CROP_MODE"]

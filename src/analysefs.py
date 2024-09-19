@@ -106,7 +106,7 @@ def analyzeFile(fpath: pathlib.Path):
     result_file_name = get_result_file_names(fpath)
 
     # Open file and split into chunks:
-    wave, sr, fileLengthSeconds = read_audio_data(fpath, sr=cfg.SAMPLE_RATE)
+    wave, sr, fileLengthSeconds, tmpdir = read_audio_data(fpath, sr=cfg.SAMPLE_RATE)
 
     # Status
     print(f"Analyzing {fpath}", flush=True)
@@ -158,9 +158,7 @@ def analyzeFile(fpath: pathlib.Path):
     saveResultFiles(results, result_file_name, fpath, cfg.SAMPLE_RATE)
     delta_time = (datetime.datetime.now() - start_time).total_seconds()
     print(f"Finished {fpath} in {delta_time:.2f} seconds", flush=True)
-
-    clean_tmp()
-
+    clean_tmp(tmpdir)
     return True
 
 

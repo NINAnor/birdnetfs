@@ -1,6 +1,7 @@
 import glob
 import os
 import shutil
+import tempfile
 
 import audioread
 import fsspec
@@ -8,31 +9,34 @@ import librosa
 
 
 def read_file(filepath, sr):
-    with fsspec.open(filepath) as f:
+    # Step 1: Create a temporary directory for this process
+    temp_dir = tempfile.mkdtemp(prefix="tmp_", dir="/tmp")
+    print(f"Created temp directory: {temp_dir}")
+
+    # Step 2: Use fsspec and configure it to use the temp_dir for caching
+    with fsspec.open(filepath, block_cache_dir=temp_dir) as f:
         wave, fs = librosa.load(f, sr=sr, mono=True, res_type="kaiser_fast")
-    return wave, fs
+
+    # Return the data and the temp directory path (for later cleanup)
+    return wave, fs, temp_dir
+
+
+def clean_tmp(temp_dir):
+    # Step 3: Clean up the temporary directory after use
+    try:
+        shutil.rmtree(temp_dir)
+        print(f"Deleted temp directory: {temp_dir}")
+    except Exception as e:
+        print(f"Failed to delete temp directory {temp_dir}. Reason: {e}")
 
 
 def read_audio_data(path, sr):
     try:
-        ndarray, rate = read_file(path, sr)
+        ndarray, rate, tmpdir = read_file(path, sr)
         duration = librosa.get_duration(y=ndarray, sr=sr)
     except audioread.exceptions.NoBackendError as e:
         print(e)
-    return ndarray, rate, duration
-
-
-def clean_tmp(directory="/tmp"):
-    # Target only directories starting with 'tmp'
-    for folder_name in os.listdir(directory):
-        if folder_name.startswith("tmp"):
-            folder_path = os.path.join(directory, folder_name)
-            try:
-                if os.path.isdir(folder_path):
-                    shutil.rmtree(folder_path)
-                    print(f"Deleted folder: {folder_path}")
-            except Exception as e:
-                print(f"Failed to delete {folder_path}. Reason: {e}")
+    return ndarray, rate, duration, tmpdir
 
 
 def openCachedFile(filesystem, path, sample_rate=48000, offset=0.0, duration=None):

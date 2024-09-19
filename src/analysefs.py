@@ -3,22 +3,28 @@ import operator
 import os
 import pathlib
 import sys
+
 import config as cfg
 from birdnetsrc.analyze import (
     get_result_file_names,
     getSortedTimestamps,
     loadCodes,
     predict,
-    #saveResultFile
 )
 from birdnetsrc.audio import splitSignal
-from birdnetsrc.utils import readLines, writeErrorLog, save_result_file
-from utils import read_audio_data
+from birdnetsrc.utils import readLines, save_result_file
+from utils import clean_tmp, read_audio_data
 
-RTABLE_HEADER = "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 RAVEN_TABLE_HEADER = "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 
-def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_path: str, result_path: str, sample_rate: int) -> str:
+
+def generate_raven_table(
+    timestamps: list[str],
+    result: dict[str, list],
+    afile_path: str,
+    result_path: str,
+    sample_rate: int,
+) -> str:
     selection_id = 0
     out_string = RAVEN_TABLE_HEADER
 
@@ -30,14 +36,16 @@ def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_p
 
     high_freq = min(high_freq, cfg.BANDPASS_FMAX)
     low_freq = max(cfg.SIG_FMIN, cfg.BANDPASS_FMIN)
-
+    print(len(cfg.SPECIES_LIST))
     # Extract valid predictions for every timestamp
     for timestamp in timestamps:
         rstring = ""
         start, end = timestamp.split("-", 1)
 
         for c in result[timestamp]:
-            if c[1] > cfg.MIN_CONFIDENCE and (not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST):
+            if c[1] > cfg.MIN_CONFIDENCE and (
+                not cfg.SPECIES_LIST or c[0] in cfg.SPECIES_LIST
+            ):
                 selection_id += 1
                 label = cfg.TRANSLATED_LABELS[cfg.LABELS.index(c[0])]
                 code = cfg.CODES[c[0]] if c[0] in cfg.CODES else c[0]
@@ -50,13 +58,14 @@ def generate_raven_table(timestamps: list[str], result: dict[str, list], afile_p
     # TODO: That's a weird way to do it, but it works for now. It would be better to keep track of file durations during the analysis.
     if len(out_string) == len(RAVEN_TABLE_HEADER) and cfg.OUTPUT_PATH is not None:
         selection_id += 1
-        out_string += (
-            f"{selection_id}\tSpectrogram 1\t1\t0\t3\t{low_freq}\t{high_freq}\tnocall\tnocall\t1.0\t{afile_path}\t0\n"
-        )
-        
+        out_string += f"{selection_id}\tSpectrogram 1\t1\t0\t3\t{low_freq}\t{high_freq}\tnocall\tnocall\t1.0\t{afile_path}\t0\n"
+
     save_result_file(result_path, out_string)
 
-def saveResultFiles(r: dict[str, list], result_files: dict[str, str], afile_path: str, sample_rate: int):
+
+def saveResultFiles(
+    r: dict[str, list], result_files: dict[str, str], afile_path: str, sample_rate: int
+):
     """Saves the results to the hard drive.
 
     Args:
@@ -71,7 +80,9 @@ def saveResultFiles(r: dict[str, list], result_files: dict[str, str], afile_path
     timestamps = getSortedTimestamps(r)
 
     if "table" in result_files:
-        generate_raven_table(timestamps, r, afile_path, result_files["table"], sample_rate)
+        generate_raven_table(
+            timestamps, r, afile_path, result_files["table"], sample_rate
+        )
 
 
 def analyzeFile(fpath: pathlib.Path):
@@ -102,9 +113,7 @@ def analyzeFile(fpath: pathlib.Path):
 
     # Process each chunk
     while offset < fileLengthSeconds:
-        chunks = splitSignal(
-            wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN
-        )
+        chunks = splitSignal(wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN)
         samples = []
         timestamps = []
 
@@ -136,9 +145,7 @@ def analyzeFile(fpath: pathlib.Path):
                 p_labels = zip(cfg.LABELS, pred, strict=False)
 
                 # Sort by score
-                p_sorted = sorted(
-                    p_labels, key=operator.itemgetter(1), reverse=True
-                )
+                p_sorted = sorted(p_labels, key=operator.itemgetter(1), reverse=True)
 
                 # Store top 5 results and advance indices
                 results[str(s_start) + "-" + str(s_end)] = p_sorted
@@ -148,11 +155,11 @@ def analyzeFile(fpath: pathlib.Path):
             timestamps = []
         offset = offset + duration
 
-    print(f"FPATH IS {fpath}")
     saveResultFiles(results, result_file_name, fpath, cfg.SAMPLE_RATE)
-
     delta_time = (datetime.datetime.now() - start_time).total_seconds()
     print(f"Finished {fpath} in {delta_time:.2f} seconds", flush=True)
+
+    clean_tmp()
 
     return True
 
@@ -175,6 +182,7 @@ if __name__ == "__main__":
 
     cfg.SPECIES_LIST_FILE = pathlib.Path() / "species_list.txt"
     cfg.SPECIES_LIST = readLines(cfg.SPECIES_LIST_FILE)
+    print(f"Species list contains {len(cfg.SPECIES_LIST)} species")
 
     filename = sys.argv[1]
     analyzeFile(filename)

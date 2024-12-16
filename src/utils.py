@@ -10,15 +10,20 @@ import librosa
 
 def read_file(filepath, sr):
     # Step 1: Create a temporary directory for this process
-    temp_dir = tempfile.mkdtemp(prefix="tmp_", dir="/tmp")
-    print(f"Created temp directory: {temp_dir}")
+    # temp_dir = tempfile.mkdtemp(prefix="tmp_", dir="/tmp")
+    # print(f"Created temp directory: {temp_dir}")
 
     # Step 2: Use fsspec and configure it to use the temp_dir for caching
-    with fsspec.open(filepath, block_cache_dir=temp_dir) as f:
+    with fsspec.open(
+        filepath
+    ) as f:  #     with fsspec.open(filepath, block_cache_dir=temp_dir) as f:
         wave, fs = librosa.load(f, sr=sr, mono=True, res_type="kaiser_fast")
 
     # Return the data and the temp directory path (for later cleanup)
-    return wave, fs, temp_dir
+    return (
+        wave,
+        fs,
+    )  # temp_dir
 
 
 def clean_tmp(temp_dir):
@@ -32,16 +37,15 @@ def clean_tmp(temp_dir):
 
 def read_audio_data(path, sr):
     try:
-        ndarray, rate, tmpdir = read_file(path, sr)
+        ndarray, rate = read_file(path, sr)  # , tmpdir
         duration = librosa.get_duration(y=ndarray, sr=sr)
     except audioread.exceptions.NoBackendError as e:
         print(e)
-    return ndarray, rate, duration, tmpdir
+    return ndarray, rate, duration  # , tmpdir
 
 
 def openCachedFile(filesystem, path, sample_rate=48000, offset=0.0, duration=None):
     import shutil
-    import tempfile
 
     bin = filesystem.openbin(path)
 

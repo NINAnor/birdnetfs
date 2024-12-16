@@ -14,10 +14,14 @@ This repository is made so that we can pull the changes made to the [BirdNET](ht
 # Clone this repository:
 git clone https://github.com/NINAnor/birdnetfs.git
 cd birdnetfs
+python -m venv .venv
+source .venv/bin/activate
 pip install requirements.txt
 ```
 
 2- Clone the BirdNET repository:
+  
+`birdnetfs` attempts to reuse `BirdNET` functions as much as possible.
 
 ```bash
 git clone https://github.com/kahst/BirdNET-Analyzer.git
@@ -26,12 +30,14 @@ mv BirdNET-Analyzer birdnetsrc
 
 3- Analyze
 
+First, you need to change the **BirdNET config_file** (**NOT** the config_connection.yaml) located in `src/config.py`. More particularly you may want to change the `OUTPUT_PATH` parameter which is the path where the output files will be created.
+
 There is two options.
 
 - First you can analyze a file of your chosing using:
 
 ```bash
-export PYTHONPATH="${PYTHONPATH}:./birdnetsrc"
+export PYTHONPATH="${PYTHONPATH}:./src/birdnetsrc:src:birdnetsrc"
 python analyse.py filecache::ssh://$USER:$PASSWORD@HOST:/PATH/TO/AUDIO/FILE1.mp3
 ```
 
@@ -63,7 +69,7 @@ python3 src/parse_results.py
 3- Extract the detections!
 
 ```bash
-python3 src/extract.py
+./extract.sh
 ```
 
 

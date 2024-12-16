@@ -1,14 +1,12 @@
 import argparse
-import glob
 import logging
 import os
-import traceback
 
 import fs
-import numpy as np
 import pyarrow.parquet as pq
 import yaml
 from tenacity import retry, wait_exponential
+
 from utils import openAudioFile, openCachedFile, saveSignal
 
 
@@ -28,16 +26,19 @@ def do_connection(connection_string):
         if connection_string:
             return fs.open_fs(connection_string)
         return False
-    except Exception as e:
-        #logging.error(f"Attempt failed to connect to filesystem: {e}")
-        #logging.info("Retrying connection...")
+    except Exception:
+        # logging.error(f"Attempt failed to connect to filesystem: {e}")
+        # logging.info("Retrying connection...")
         raise
 
+
 # @retry(wait=wait_exponential(multiplier=5, min=60, max=600))
-def extract_segments(item, sample_rate, out_path, filesystem, seg_length=3):
+def extract_segments(
+    item, sample_rate, out_path, filesystem, connection_string, seg_length=3
+):
     """Extract segments from the audio file and save them."""
     segments = item
-    audio_file = item["audio"]
+    audio_file = os.path.join(connection_string, item["audio"])
 
     signal, rate = (
         openAudioFile(audio_file, sample_rate)
@@ -46,7 +47,7 @@ def extract_segments(item, sample_rate, out_path, filesystem, seg_length=3):
     )
 
     save_extracted_segments(signal, rate, segments, out_path, seg_length)
-    #logging.info(f"Segments extracted from {audio_file}")
+    # logging.info(f"Segments extracted from {audio_file}")
 
 
 def save_extracted_segments(signal, rate, segment, out_path, seg_length):
@@ -62,7 +63,6 @@ def save_extracted_segments(signal, rate, segment, out_path, seg_length):
         save_segment(segment_signal, segment, out_path)
 
 
-
 def save_segment(segment_signal, segment, out_path):
     """Save an individual segment."""
     species_path = os.path.join(out_path, segment["species"])
@@ -75,7 +75,6 @@ def save_segment(segment_signal, segment, out_path):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
@@ -96,5 +95,10 @@ if __name__ == "__main__":
     for item in items.to_pylist():
         print(f"Extracting segments from {item}")
         extract_segments(
-            item, config["SAMPLE_RATE"], config["OUT_PATH_SEGMENTS"], myfs, seg_length=3
+            item,
+            config["SAMPLE_RATE"],
+            config["OUT_PATH_SEGMENTS"],
+            myfs,
+            config["CONNECTION_STRING"],
+            seg_length=3,
         )

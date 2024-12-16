@@ -13,13 +13,13 @@ RANDOM_SEED: int = 42
 ##########################
 
 MODEL_VERSION: str = "V2.4"
-PB_MODEL: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model"
+PB_MODEL: str = "./checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model"
 # MODEL_PATH = PB_MODEL # This will load the protobuf model
-MODEL_PATH: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model_FP32.tflite"
-MDATA_MODEL_PATH: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_MData_Model_V2_FP16.tflite"
-LABELS_FILE: str = "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt"
+MODEL_PATH: str = "./checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Model_FP32.tflite"
+MDATA_MODEL_PATH: str = "./checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_MData_Model_V2_FP16.tflite"
+LABELS_FILE: str = "./checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt"
 TRANSLATED_LABELS_PATH: str = (
-    "/home/benjamin.cretois/Code/birdnetfs/birdnetfs/src/birdnetsrc/labels/V2.4"
+    "./labels/V2.4"
 )
 
 # Path to custom trained classifier
@@ -71,15 +71,15 @@ LOCATION_FILTER_THRESHOLD: float = 0.03
 # Note: Entries in this list have to match entries from the LABELS_FILE
 # We use the 2021 eBird taxonomy for species names (Clements list)
 CODES_FILE: str = (
-    "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/eBird_taxonomy_codes_2021E.json"
+    "./eBird_taxonomy_codes_2021E.json"
 )
 SPECIES_LIST_FILE: str = (
-    "/home/benjamin.cretois/Code/birdnetfs/src/birdnetsrc/example/species_list.txt"
+    "./example/species_list.txt"
 )
 
 # File input path and output path for selection tables
 INPUT_PATH: str = "example/"
-OUTPUT_PATH: str = "results/"
+OUTPUT_PATH: str = "/data/Prosjekter3/824001_05_metodesats_gis_24_41_flittie_kleiven/birdnetResults"
 
 # Supported file types
 ALLOWED_FILETYPES: list[str] = [

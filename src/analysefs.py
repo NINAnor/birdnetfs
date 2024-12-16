@@ -13,7 +13,7 @@ from birdnetsrc.analyze import (
 )
 from birdnetsrc.audio import splitSignal
 from birdnetsrc.utils import readLines, save_result_file
-from utils import clean_tmp, read_audio_data
+from utils import read_audio_data
 
 RAVEN_TABLE_HEADER = "Selection\tView\tChannel\tBegin Time (s)\tEnd Time (s)\tLow Freq (Hz)\tHigh Freq (Hz)\tCommon Name\tSpecies Code\tConfidence\tBegin Path\tFile Offset (s)\n"
 
@@ -60,6 +60,7 @@ def generate_raven_table(
         selection_id += 1
         out_string += f"{selection_id}\tSpectrogram 1\t1\t0\t3\t{low_freq}\t{high_freq}\tnocall\tnocall\t1.0\t{afile_path}\t0\n"
 
+    print(f"FILE SAVED IN {result_path}")
     save_result_file(result_path, out_string)
 
 
@@ -94,7 +95,7 @@ def analyzeFile(fpath: pathlib.Path):
         item: Tuple containing (file path, config)
 
     Returns:
-        The `True` if the file was analyzed successfully.
+        The True if the file was analyzed successfully.
     """
 
     # Start time
@@ -106,7 +107,7 @@ def analyzeFile(fpath: pathlib.Path):
     result_file_name = get_result_file_names(fpath)
 
     # Open file and split into chunks:
-    wave, sr, fileLengthSeconds, tmpdir = read_audio_data(fpath, sr=cfg.SAMPLE_RATE)
+    wave, sr, fileLengthSeconds = read_audio_data(fpath, sr=cfg.SAMPLE_RATE)
 
     # Status
     print(f"Analyzing {fpath}", flush=True)
@@ -158,7 +159,8 @@ def analyzeFile(fpath: pathlib.Path):
     saveResultFiles(results, result_file_name, fpath, cfg.SAMPLE_RATE)
     delta_time = (datetime.datetime.now() - start_time).total_seconds()
     print(f"Finished {fpath} in {delta_time:.2f} seconds", flush=True)
-    clean_tmp(tmpdir)
+    print(f"OUTPUT file saved in {result_file_name}")
+
     return True
 
 

@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import pandas as pd
 
 import fs
 import pyarrow.parquet as pq
@@ -9,7 +10,6 @@ from tenacity import retry, wait_exponential
 
 from utils import openAudioFile, openCachedFile, saveSignal
 
-
 def setup_logging():
     logging.basicConfig(
         filename="audio_processing.log",
@@ -17,7 +17,6 @@ def setup_logging():
         format="%(asctime)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-
 
 @retry(wait=wait_exponential(multiplier=1, min=4, max=120))
 def do_connection(connection_string):
@@ -30,7 +29,6 @@ def do_connection(connection_string):
         # logging.error(f"Attempt failed to connect to filesystem: {e}")
         # logging.info("Retrying connection...")
         raise
-
 
 # @retry(wait=wait_exponential(multiplier=5, min=60, max=600))
 def extract_segments(
@@ -49,7 +47,6 @@ def extract_segments(
     save_extracted_segments(signal, rate, segments, out_path, seg_length)
     # logging.info(f"Segments extracted from {audio_file}")
 
-
 def save_extracted_segments(signal, rate, segment, out_path, seg_length):
     """Save the extracted segments to the output path."""
     # for segment in segments:
@@ -62,7 +59,6 @@ def save_extracted_segments(signal, rate, segment, out_path, seg_length):
         segment_signal = signal[start:end]
         save_segment(segment_signal, segment, out_path)
 
-
 def save_segment(segment_signal, segment, out_path):
     """Save an individual segment."""
     species_path = os.path.join(out_path, segment["species"])
@@ -72,7 +68,6 @@ def save_segment(segment_signal, segment, out_path):
     segment_path = os.path.join(species_path, segment_name)
     print(f"Segment {segment_path} saved")
     saveSignal(segment_signal, segment_path)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -90,15 +85,44 @@ if __name__ == "__main__":
 
     myfs = do_connection(config["CONNECTION_STRING"])
 
-    items = pq.read_table(args.parquet_file, filters=[["audio", "=", args.audio_file]])
+    # Read the Parquet file into a DataFrame
+    parquet_df = pd.read_parquet(args.parquet_file)
 
-    for item in items.to_pylist():
-        print(f"Extracting segments from {item}")
-        extract_segments(
-            item,
-            config["SAMPLE_RATE"],
-            config["OUT_PATH_SEGMENTS"],
-            myfs,
-            config["CONNECTION_STRING"],
-            seg_length=3,
-        )
+    # Log the total number of detections in the Parquet file
+    print(f"Total number of detections in the Parquet file: {len(parquet_df)}")
+
+    # Limit the total number of segments per species globally
+    num_segments_per_species = config["NUM_SEGMENTS"]
+    sampled_items = parquet_df.groupby("species").apply(
+        lambda x: x.sample(min(len(x), num_segments_per_species), random_state=None)
+    ).reset_index(drop=True)
+
+    # Log the number of sampled detections
+    print(f"Number of sampled detections across all species: {len(sampled_items)}")
+
+    # Filter the sampled items for the specific audio file
+    audio_file_basename = os.path.basename(args.audio_file)
+    filtered_items = sampled_items[sampled_items['audio'].str.contains(audio_file_basename, na=False, case=False)]
+
+    # Skip processing if there are no relevant segments for the file
+    if filtered_items.empty:
+        print(f"No detections found for {args.audio_file}. Skipping...")
+        exit(0)
+
+    # Log the number of detections for the specific audio file
+    print(f"Number of detections for {args.audio_file}: {len(filtered_items)}")
+
+    # Process each detection
+    for _, item in filtered_items.iterrows():
+        try:
+            logging.info(f"Processing item: {item}")
+            extract_segments(
+                item,
+                config["SAMPLE_RATE"],
+                config["OUT_PATH_SEGMENTS"],
+                myfs,
+                config["CONNECTION_STRING"],
+                seg_length=3,
+            )
+        except Exception as e:
+            logging.error(f"Error processing segment {item}: {e}")

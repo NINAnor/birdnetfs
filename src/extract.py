@@ -76,8 +76,8 @@ if __name__ == "__main__":
         default="config_connection.yaml",
         help="Path to the configuration file.",
     )
-    parser.add_argument("--parquet_file", default="sample.parquet")
-    parser.add_argument("audio_file")
+    parser.add_argument("--parquet_file", default="sampled_segments.parquet", help="Path to the pre-sampled parquet file.")
+    parser.add_argument("audio_file", help="The audio file to process.")
     args = parser.parse_args()
 
     with open(args.config) as config_file:
@@ -85,34 +85,23 @@ if __name__ == "__main__":
 
     myfs = do_connection(config["CONNECTION_STRING"])
 
-    # Read the Parquet file into a DataFrame
-    parquet_df = pd.read_parquet(args.parquet_file)
+    # Read the pre-sampled Parquet file into a DataFrame
+    sampled_df = pd.read_parquet(args.parquet_file)
 
-    # Log the total number of detections in the Parquet file
-    print(f"Total number of detections in the Parquet file: {len(parquet_df)}")
-
-    # Limit the total number of segments per species globally
-    num_segments_per_species = config["NUM_SEGMENTS"]
-    sampled_items = parquet_df.groupby("species").apply(
-        lambda x: x.sample(min(len(x), num_segments_per_species), random_state=None)
-    ).reset_index(drop=True)
-
-    # Log the number of sampled detections
-    print(f"Number of sampled detections across all species: {len(sampled_items)}")
-
-    # Filter the sampled items for the specific audio file
+    # Normalize paths and filter by file name
     audio_file_basename = os.path.basename(args.audio_file)
-    filtered_items = sampled_items[sampled_items['audio'].str.contains(audio_file_basename, na=False, case=False)]
+    filtered_items = sampled_df[sampled_df['audio'].str.contains(audio_file_basename, na=False, case=False)]
 
-    # Skip processing if there are no relevant segments for the file
+    # Skip processing if no relevant detections are found for the file
     if filtered_items.empty:
         print(f"No detections found for {args.audio_file}. Skipping...")
         exit(0)
 
-    # Log the number of detections for the specific audio file
+    # Log the number of detections
     print(f"Number of detections for {args.audio_file}: {len(filtered_items)}")
 
     # Process each detection
+    saved_count = 0
     for _, item in filtered_items.iterrows():
         try:
             logging.info(f"Processing item: {item}")
@@ -124,5 +113,9 @@ if __name__ == "__main__":
                 config["CONNECTION_STRING"],
                 seg_length=3,
             )
+            saved_count += 1
         except Exception as e:
             logging.error(f"Error processing segment {item}: {e}")
+
+    # Log the total number of saved segments
+    print(f"Number of segments successfully saved for {args.audio_file}: {saved_count}")

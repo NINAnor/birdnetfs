@@ -58,13 +58,23 @@ Analyzing the files will return `Birdnet.selection.table.txt` files in the `OUTP
 
 1- Update the `config_connection.yaml`
 
-2- Build a `.parquet` database using:
+2- Build a `sample.parquet` database using:
 
 ```bash
 python3 src/parse_results.py
 ```
 
-:star: Note that the database will contain `$NUM_SEGMENT` at `$THRESHOLD`. Both parameters saved in `config_connection.yaml`. 
+This `parquet` database is a database containing ALL the results from BirdNET.
+
+
+3- Build a `sampled_segments.parquet`
+
+```bash
+python3 src/global_sampler.py
+```
+
+
+:star: Note that this `parquet` file will contain `$NUM_SEGMENT` random segments with the `$THRESHOLD` indicated in the `config_connection.yaml`. 
 
 3- Extract the detections!
 

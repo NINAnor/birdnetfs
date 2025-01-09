@@ -100,8 +100,8 @@ def analyzeFile(fpath: pathlib.Path):
 
     # Start time
     start_time = datetime.datetime.now()
-    offset = 0
-    duration = cfg.FILE_SPLITTING_DURATION
+    #offset = 0
+    #duration = cfg.FILE_SPLITTING_DURATION
     start, end = 0, cfg.SIG_LENGTH
     results = {}
     result_file_name = get_result_file_names(fpath)
@@ -113,48 +113,52 @@ def analyzeFile(fpath: pathlib.Path):
     print(f"Analyzing {fpath}", flush=True)
 
     # Process each chunk
-    while offset < fileLengthSeconds:
-        chunks = splitSignal(wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN)
+    #while offset < fileLengthSeconds:
+    chunks = splitSignal(wave, sr, cfg.SIG_LENGTH, cfg.SIG_OVERLAP, cfg.SIG_MINLEN)
+    print(len(chunks))
+    samples = []
+    timestamps = []
+
+    for chunk_index, chunk in enumerate(chunks):
+        print(chunk_index)
+        # Add to batch
+        samples.append(chunk)
+        timestamps.append([start, end])
+
+        # Advance start and end
+        start += cfg.SIG_LENGTH - cfg.SIG_OVERLAP
+        end = start + cfg.SIG_LENGTH
+
+        print(start)
+
+        # Check if batch is full or last chunk
+        if len(samples) < cfg.BATCH_SIZE and chunk_index < len(chunks) - 1:
+            continue
+
+        # Predict
+        p = predict(samples)
+
+        # Add to results
+        for i in range(len(samples)):
+            # Get timestamp
+            s_start, s_end = timestamps[i]
+
+            # Get prediction
+            pred = p[i]
+
+            # Assign scores to labels
+            p_labels = zip(cfg.LABELS, pred, strict=False)
+
+            # Sort by score
+            p_sorted = sorted(p_labels, key=operator.itemgetter(1), reverse=True)
+
+            # Store top 5 results and advance indices
+            results[str(s_start) + "-" + str(s_end)] = p_sorted
+
+        # Clear batch
         samples = []
         timestamps = []
-
-        for chunk_index, chunk in enumerate(chunks):
-            # Add to batch
-            samples.append(chunk)
-            timestamps.append([start, end])
-
-            # Advance start and end
-            start += cfg.SIG_LENGTH - cfg.SIG_OVERLAP
-            end = start + cfg.SIG_LENGTH
-
-            # Check if batch is full or last chunk
-            if len(samples) < cfg.BATCH_SIZE and chunk_index < len(chunks) - 1:
-                continue
-
-            # Predict
-            p = predict(samples)
-
-            # Add to results
-            for i in range(len(samples)):
-                # Get timestamp
-                s_start, s_end = timestamps[i]
-
-                # Get prediction
-                pred = p[i]
-
-                # Assign scores to labels
-                p_labels = zip(cfg.LABELS, pred, strict=False)
-
-                # Sort by score
-                p_sorted = sorted(p_labels, key=operator.itemgetter(1), reverse=True)
-
-                # Store top 5 results and advance indices
-                results[str(s_start) + "-" + str(s_end)] = p_sorted
-
-            # Clear batch
-            samples = []
-            timestamps = []
-        offset = offset + duration
+        #offset = offset + duration
 
     saveResultFiles(results, result_file_name, fpath, cfg.SAMPLE_RATE)
     delta_time = (datetime.datetime.now() - start_time).total_seconds()

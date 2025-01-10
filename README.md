@@ -76,10 +76,26 @@ python3 src/global_sampler.py
 
 :star: Note that this `parquet` file will contain `$NUM_SEGMENT` random segments with the `$THRESHOLD` indicated in the `config_connection.yaml`. 
 
-3- Extract the detections!
+4- Extract the detections!
 
 ```bash
 ./extract.sh
+```
+
+## Format for annotation
+
+To annotate the extracted segments, we create a `csv` file per species. The `csv` list the segments to annotate and add a few columns for the annotator to fill. To help create the `csv` files, the repository contains a bash script `to_annotation_sheet.sh`.
+
+Be sure to change the input and output in the script L4 and L5:
+
+```bash
+BASE_DIR= ./extracted_segments # Folder where all the segments are stored 
+OUTPUT_DIR= ./csv # Folder that receives the csv files
+```
+Then run the script:
+
+```bash
+./to_annotation_sheet.sh
 ```
 
 

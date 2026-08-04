@@ -1,3 +1,5 @@
+**Repository archived**: alternative approach recommended: [NINAnor/run_birdnet](https://github.com/NINAnor/run_birdnet).
+
 # BIRDNETFS: BirdNET compatible with fsspec
 
 ## Introduction

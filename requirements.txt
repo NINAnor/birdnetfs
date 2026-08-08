@@ -73,7 +73,7 @@ numba==0.60.0
 numpy==1.26.4
 oauthlib==3.2.2
 opt-einsum==3.3.0
-orjson==3.10.5
+orjson==3.11.6
 packaging==24.1
 pandas==2.2.2
 paramiko==3.4.0
